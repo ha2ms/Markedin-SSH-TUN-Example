@@ -14,6 +14,7 @@ Le SSH Tunneling va:
 
 ![](http://93.90.205.194/docs/ssh-tunneling/ssh-tunneling-draw-number.png)
 
+![](http://93.90.205.194/github/terraform/reboot/reboot_error.png)
 ## Sur la Machine du node-exporter:
 Il nous faudra restreindre l'accès pour n'écouter sur le port 9100 seulement depuis la machine elle-même.
 
