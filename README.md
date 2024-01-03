@@ -3,16 +3,14 @@
 Lors d'une remontée standard de metrics, l'on configure Prometheus pour pointer sur l'hôte et le port prédéfini de notre machine cible, contentant le node-exporter nous permettant l'accès à ses précieuses metrics.
 --- 
 Cependant ces metrics sont ouvertement accessibles et exploitable par n'importe qui faisant une requête sur le service.
-  L'idée est donc de fermer l'accès à ces metrics depuis l’extérieur de la machine, mais comment Prometheus va pouvoir y accéder si les données ne sont accessibles qu'au sein même de la machine ? Un VPN ?
   ---
-Plus simple, un Tunnel SSH, pas de certificats à gérer,  pas de configuration complexe, une simple clé privée et publique suffit pour établir nôtre connexion sécurisée pour accéder à l'hôte distant, récupérer les fameuses metrics, et les rendre de nouveaux accessibles au sein même de notre machine Prometheus.
+Un Tunnel SSH,  pas de configuration complexe, une simple clé privée et publique suffit pour établir nôtre connexion sécurisée pour accéder à l'hôte distant pour récupérer les fameuses metrics.
 
 Le SSH Tunneling va:
-> - Ouvrir un service sur un port local de Prometheus pour qu'il puisse s'y connecter (ex: 7080).
-> - Dès que Prometheus lancera une requête sur son port 7080, une connexion SSH sera établit avec l'hôte distant contenant les metrics. 
-> - Elles seront récupérées depuis l'hôte distant lui même puis redirigées (via le tunnel sécurisé) sur le serveur local de Prometheus (au port 7080).
-> 
->![](http://93.90.205.194/docs/ssh-tunneling/ssh-tunneling-draw-number.png)
+- Ouvrir un service sur un port local de Prometheus pour qu'il puisse s'y connecter (ex: 7080).
+- Dès que Prometheus lancera une requête sur son port 7080, une connexion SSH sera établit avec l'hôte distant contenant les metrics. 
+- Elles seront récupérées depuis l'hôte distant lui même puis redirigées (via le tunnel sécurisé) sur le serveur local de Prometheus (au port 7080).
+![](http://93.90.205.194/docs/ssh-tunneling/ssh-tunneling-draw-number.png)
 ---
 
 ## Sur la Machine du node-exporter:
@@ -22,58 +20,58 @@ Il nous faudra restreindre l'accès pour n'écouter sur le port 9100 seulement d
 ---
 
 > #### Éditer le service node-exporter:
-> ```bash
-> sudo systemctl edit --full prometheus-node-exporter.service
-> ```
->
->```vim
->[Unit]
-> Description=Prometheus exporter for machine metrics
-> Documentation=https://github.com/prometheus/node_exporter
->
-> [Service]
-> Restart=always
-> User=prometheus
-> EnvironmentFile=/etc/default/prometheus-node-exporter
-> ExecStart=/usr/bin/prometheus-node-exporter $ARGS
-> ExecReload=/bin/kill -HUP $MAINPID
-> TimeoutStopSec=20s
-> SendSIGKILL=no
->
-> [Install]
-> WantedBy=multi-user.target
->```
+```bash
+sudo systemctl edit --full prometheus-node-exporter.service
+```
+
+```vim
+[Unit]
+ Description=Prometheus exporter for machine metrics
+ Documentation=https://github.com/prometheus/node_exporter
+
+[Service]
+ Restart=always
+ User=prometheus
+ EnvironmentFile=/etc/default/prometheus-node-exporter
+ ExecStart=/usr/bin/prometheus-node-exporter $ARGS
+ ExecReload=/bin/kill -HUP $MAINPID
+ TimeoutStopSec=20s
+ SendSIGKILL=no
+
+ [Install]
+ WantedBy=multi-user.target
+```
 ---
->## Si vous avez utiliser < apt install > (gestionnaire de paquets) pour le node-exporter
->On peut voir qu'un fichier d'environnement existe dans **</etc/default/prometheus-node-exporter>**, editons le:
->```bash
->sudo nano /etc/default/prometheus-node-exporter
->```
->L'on peut voir vers le début l'argument **ARGS=""**
->Ajoutez entre les guillemets: 
->```vim
->ARGS="--web.listen-address=127.0.0.1:9100"
->```
->Puis dans l'édition du systèmed ajouter **$ARGS** comme argument dans **ExecStart**
->```vim
->ExecStart=/usr/bin/prometheus-node-exporter $ARGS
->```
+## Si vous avez utiliser < apt install > (gestionnaire de paquets) pour le node-exporter
+On peut voir qu'un fichier d'environnement existe dans **</etc/default/prometheus-node-exporter>**, editons le:
+```bash
+sudo nano /etc/default/prometheus-node-exporter
+```
+L'on peut voir vers le début l'argument **ARGS=""**
+Ajoutez entre les guillemets: 
+```vim
+ARGS="--web.listen-address=127.0.0.1:9100"
+```
+Puis dans l'édition du systèmed ajouter **$ARGS** comme argument dans **ExecStart**
+```vim
+ExecStart=/usr/bin/prometheus-node-exporter $ARGS
+```
 ---
-> ## Si vous avez installé node-exporter manuellement
+ ## Si vous avez installé node-exporter manuellement
 > Dans l'édition du systemd du node-exporter.
 > Ajoutez la variable d'environnement **ARGS** juste au-dessus de **ExecStart**:
-> ```vim
-> # Création variable environnement
-> Environment="ARGS=--web.listen-address=127.0.0.1:9100"
-> ExecStart=/usr/bin/node-exporter $ARGS
-> # Utilisation de la variable dans ExecStart
-> ```
+ ```vim
+ # Création variable environnement
+ Environment="ARGS=--web.listen-address=127.0.0.1:9100"
+ ExecStart=/usr/bin/node-exporter $ARGS
+ # Utilisation de la variable dans ExecStart
+```
 > Puis relançons le démon du systemd:
-> ```bash
-> sudo systemctl daemon-reload
-> sudo systemctl restart node-exporter
-> sudo systemctl status node-exporter
-> ```
+```bash
+sudo systemctl daemon-reload
+sudo systemctl restart node-exporter
+sudo systemctl status node-exporter
+```
 > Maintenant les metrics ne sont accesibles que depuis la machine elle-même ! Et par conséquent seul vôtre tunnel est à même de récupérer les donnés depuis l'extérieur.
 ---
 
