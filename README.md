@@ -11,7 +11,8 @@ Le SSH Tunneling va:
 - Dès que Prometheus lancera une requête sur son port 7080, une connexion SSH sera établit avec l'hôte distant contenant les metrics. 
 - Elles seront récupérées depuis l'hôte distant lui même puis redirigées (via le tunnel sécurisé) sur le serveur local de Prometheus (au port 7080).
 
-![](http://93.90.205.194/docs/ssh-tunneling/ssh-tunneling-draw-number.png)
+
+ ![](http://93.90.205.194/docs/ssh-tunneling/ssh-tunneling-draw-number.png)
 
 ---
 
